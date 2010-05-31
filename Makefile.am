@@ -16,7 +16,7 @@ STROPHE_LIBS = libstrophe.la
 noinst_LTLIBRARIES =
 
 lib_LTLIBRARIES = libstrophe.la
-include_HEADERS = strophe.h strophepp.h
+include_HEADERS = strophe.h strophepp.h src/*.h
 
 EXTRA_DIST = README.txt CHANGES.txt Doxyfile GPL-LICENSE.txt LICENSE.txt MIT-LICENSE.txt docs vs2008
 
