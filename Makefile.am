@@ -6,9 +6,6 @@ AM_CFLAGS = -g
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libstrophe.pc
 
-builtin_CFLAGS = -I$(top_srcdir)/expat/lib
-builtin_LIBS = libexpat.la
-
 PARSER_CFLAGS=@PARSER_CFLAGS@
 PARSER_LIBS=@PARSER_LIBS@
 
@@ -18,18 +15,13 @@ STROPHE_LIBS = libstrophe.la
 ## Main build targets
 noinst_LTLIBRARIES =
 
-if BUILD_EXPAT
-noinst_LTLIBRARIES += libexpat.la
-libstrophe_la_DEPENDENCIES = libexpat.la
-endif
-
 lib_LTLIBRARIES = libstrophe.la
 include_HEADERS = strophe.h strophepp.h
 
 EXTRA_DIST = README.txt CHANGES.txt Doxyfile GPL-LICENSE.txt LICENSE.txt MIT-LICENSE.txt docs vs2008
 
 libstrophe_la_CFLAGS=$(STROPHE_FLAGS) $(PARSER_CFLAGS) $(AM_CFLAGS)
-libstrophe_la_LIBADD = $(PARSER_LIBS) -lssl
+libstrophe_la_LIBADD = $(PARSER_LIBS) -lssl -lresolv
 libstrophe_la_SOURCES = src/auth.c src/conn.c src/ctx.c \
 	src/event.c src/handler.c src/hash.c \
 	src/jid.c src/md5.c src/sasl.c src/sha1.c \
@@ -43,19 +35,11 @@ else
 libstrophe_la_SOURCES += src/parser_libxml2.c
 endif
 
-libexpat_la_CFLAGS=-DXML_DTD -DXML_NS -DXML_CONTEXT_BYTES=1024 -DXML_STATIC \
-	-I$(top_srcdir)/expat/lib $(AM_CFLAGS)
-libexpat_la_SOURCES=expat/lib/xmlparse.c expat/lib/xmltok.c expat/lib/xmlrole.c expat/lib/*.h
-EXTRA_DIST += expat
-
-dist-hook:
-	rm -rf $(distdir)/expat/.git
-
 ## Examples
 noinst_PROGRAMS = examples/active examples/roster examples/basic examples/bot
 examples_active_SOURCES = examples/active.c
 examples_active_CFLAGS = $(STROPHE_FLAGS)
-examples_active_LDADD = $(STROPHE_LIBS) 
+examples_active_LDADD = $(STROPHE_LIBS)
 examples_roster_SOURCES = examples/roster.c
 examples_roster_CFLAGS = $(STROPHE_FLAGS)
 examples_roster_LDADD = $(STROPHE_LIBS) 

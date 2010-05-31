@@ -71,42 +71,86 @@ echo "Regression tests will not be built"
 ])
 AM_CONDITIONAL([HAVE_CHECK], [test x$HAVE_CHECK = xyes])
 
-LIBXML2_REQUIRE=
-AC_ARG_WITH([libxml2],
-            [AS_HELP_STRING([--with-libxml2], [use libxml2 for XML parsing])],
-            [with_libxml2=check],
-            [with_libxml2=no])
+# Configure path to libxml2 includes and lib.
+AC_MSG_CHECKING([for libxml2])
+AC_ARG_WITH([libxml2], [AC_HELP_STRING([--with-libxml2=PATH], [path to installed libxml2 [default=/usr]])], [
+  LIBXML2_INCLUDE="${withval}/include/libxml2"
+  LIBXML2_LIB="${withval}/lib"
+  AC_MSG_RESULT("${withval}")
+], [
+  LIBXML2_INCLUDE="/usr/include/libxml2"
+  LIBXML2_LIB="/usr/lib"
+  AC_MSG_RESULT(/usr)
+])
+AC_SUBST(LIBXML2_INCLUDE)
+AC_SUBST(LIBXML2_LIB)
 
-if test "x$with_libxml2" != xno; then
-  PKG_CHECK_MODULES([libxml2], [libxml-2.0 >= 2.7],
-                    [with_libxml2=yes; LIBXML2_REQUIRE="libxml-2.0"],
-                    [AC_MSG_ERROR([couldn't find libxml2])])
+# Configure path to expat includes and lib.
+AC_MSG_CHECKING([for expat])
+AC_ARG_WITH([expat], [AC_HELP_STRING([--with-expat=PATH], [path to installed expat [default=/usr]])], [
+  LIBEXPAT_INCLUDE="-I${withval}/include"
+  LIBEXPAT_LIB="${withval}/lib"
+  AC_MSG_RESULT("${withval}")
+], [
+  LIBEXPAT_INCLUDE="/usr/include"
+  LIBEXPAT_LIB="/usr/lib"
+  AC_MSG_RESULT(/usr)
+])
+AC_SUBST(LIBEXPAT_INCLUDE)
+AC_SUBST(LIBEXPAT_LIB)
+
+# Enable Libxml2 support
+default_LIBS="${LIBS}"
+AC_MSG_CHECKING([whether to use libxml2 for XML parsing])
+AC_ARG_ENABLE(libxml2, [AS_HELP_STRING([--enable-libxml2], [use libxml2 for XML parsing [default=no]])],
+[ case "${enableval}" in
+  no)
+    AC_MSG_RESULT(no)
+    ;;
+  *)
+    AC_MSG_RESULT(yes)
+    want_libxml2=true
+    ;;
+  esac ],
+[ AC_MSG_RESULT(no)])
+if test "${want_libxml2}" = "true"; then
+  LIBS="-L${LIBXML2_LIB} ${default_LIBS}"
+  AC_CHECK_LIB([xml2], [xmlInitParser], [], [AC_MSG_ERROR([couldn't find a suitable libxml2, use --with-libxml2=PATH])])
+  AM_CONDITIONAL([WANT_LIBXML2], true)
+  AC_DEFINE([WANT_LIBXML2], 1, [use libxml2 for XML parsing])
+  AM_CONDITIONAL([WANT_LIBEXPAT], false)
+
+  with_parser=libxml2
+  PARSER_NAME=libxml2
+  PARSER_CFLAGS="-I${LIBXML2_INCLUDE}"
+  PARSER_LIBS="-L${LIBXML2_LIB} -R${LIBXML2_LIB} -lxml2"
+
 else
-  AC_CHECK_FUNCS(memmove)
-  AC_C_BIGENDIAN([byteorder=1234], [byteorder=4321], [], [])
+
+  # Enable expat support
+  LIBS="-L${LIBEXPAT_LIB} ${default_LIBS}"
+  AC_CHECK_LIB([expat], [XML_ExpatVersionInfo], [], [AC_MSG_ERROR([couldn't find a suitable libexpat, use --with-expat=PATH])])
+  AM_CONDITIONAL([WANT_LIBEXPAT], true)
+  AC_DEFINE([WANT_LIBEXPAT], 1, [use expat for XML parsing])
+  AM_CONDITIONAL([WANT_LIBXML2], false)
+
+  with_parser=libexpat
+  PARSER_NAME=expat
+  PARSER_CFLAGS="-I${LIBEXPAT_INCLUDE}"
+  PARSER_LIBS="-L${LIBEXPAT_LIB} -R${LIBEXPAT_LIB} -lexpat"
+
 fi
-AC_SUBST(LIBXML2_REQUIRE)
+LIBS="${default_LIBS}"
 
 AC_CHECK_FUNCS(snprintf)
 AC_CHECK_FUNCS(vsnprintf)
-
-if test "x$with_libxml2" = xyes; then
-  with_parser=libxml2
-  PARSER_NAME=libxml2
-  PARSER_CFLAGS=\$\(libxml2_CFLAGS\)
-  PARSER_LIBS=\$\(libxml2_LIBS\)
-else
-  with_parser=builtin
-  PARSER_NAME=expat
-  PARSER_CFLAGS=\$\(builtin_CFLAGS\)
-  PARSER_LIBS=\$\(builtin_LIBS\)
-fi
+AC_CHECK_FUNCS(memmove)
+AC_C_BIGENDIAN([byteorder=1234], [byteorder=4321], [], [])
 
 AC_MSG_NOTICE([libstrophe will use the $with_parser XML parser])
 AC_SEARCH_LIBS([socket], [socket])
 AC_CHECK_LIB([resolv], [main])
 
-AM_CONDITIONAL([BUILD_EXPAT], [test x$with_parser = xbuiltin])
 AM_CONDITIONAL([PARSER_EXPAT], [test x$with_parser != xlibxml2])
 AC_DEFINE_UNQUOTED([BYTEORDER], [$byteorder])
 AC_SUBST(PARSER_NAME)
