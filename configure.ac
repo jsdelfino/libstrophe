@@ -88,7 +88,7 @@ AC_SUBST(LIBXML2_LIB)
 # Configure path to expat includes and lib.
 AC_MSG_CHECKING([for expat])
 AC_ARG_WITH([expat], [AC_HELP_STRING([--with-expat=PATH], [path to installed expat [default=/usr]])], [
-  LIBEXPAT_INCLUDE="-I${withval}/include"
+  LIBEXPAT_INCLUDE="${withval}/include"
   LIBEXPAT_LIB="${withval}/lib"
   AC_MSG_RESULT("${withval}")
 ], [
